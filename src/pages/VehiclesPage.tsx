@@ -36,7 +36,7 @@ export function VehiclesPage() {
         </button>
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3em', marginBottom: 12 }}>{selected.vehicle_no}</h1>
         <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: '0.88em' }}>
+          <div className="grid-2" style={{ fontSize: '0.88em' }}>
             <div><div className="form-label" style={{ marginBottom: 2 }}>Type</div><div>{selected.category}</div></div>
             <div><div className="form-label" style={{ marginBottom: 2 }}>Model</div><div>{selected.model || '—'}</div></div>
             <div><div className="form-label" style={{ marginBottom: 2 }}>Status</div><div><span className="badge badge-blue">{selected.status}</span></div></div>
@@ -70,7 +70,7 @@ export function VehiclesPage() {
   return (
     <div>
       <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3em', marginBottom: 16 }}>Vehicles</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
+      <div className="grid-2" style={{ marginBottom: 16 }}>
         <div className="stat-card"><div className="label">Total Vehicles</div><div className="value">{vehicles.length}</div></div>
         <div className="stat-card"><div className="label">Total Distance</div><div className="value">{totalDistance.toLocaleString()} KM</div></div>
       </div>

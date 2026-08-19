@@ -117,7 +117,7 @@ export function StartTripModal({ onClose, onStarted }: { onClose: () => void; on
               ))}
             </select>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-row form-row-2">
             <div className="form-group">
               <label className="form-label">Start Date *</label>
               <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />

@@ -78,7 +78,7 @@ export function EndTripModal({ trip, onClose, onEnded }: { trip: Trip; onClose: 
             <CustomerSequencePicker customers={customers} value={selected} onChange={setSelected} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div className="form-row form-row-2">
             <div className="form-group">
               <label className="form-label">End Date *</label>
               <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />

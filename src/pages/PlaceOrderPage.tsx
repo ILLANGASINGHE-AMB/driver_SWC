@@ -195,7 +195,7 @@ export function PlaceOrderPage() {
           <CustomerPicker customers={customers} value={customer} onSelect={handleCustomerSelect} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="form-row form-row-2">
           <div className="form-group">
             <label className="form-label">Pickup Date</label>
             <input type="date" className="form-input" value={pickupDate} onChange={(e) => setPickupDate(e.target.value)} />
@@ -218,7 +218,7 @@ export function PlaceOrderPage() {
             <div className="form-group" style={{ marginBottom: 8 }}>
               <ItemPicker items={items} value={row.item} onSelect={(item) => selectItemForRow(row.key, item)} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 0.7fr 1fr', gap: 8 }}>
+            <div className="form-row-3">
               <select className="form-input" value={row.service} onChange={(e) => changeServiceForRow(row.key, e.target.value as ServiceType)}>
                 <option value="Dry Clean">Dry Clean</option>
                 <option value="Wash & Press">Wash & Press</option>
@@ -235,7 +235,7 @@ export function PlaceOrderPage() {
           </div>
         ))}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+        <div className="form-row form-row-2" style={{ marginTop: 8 }}>
           <div className="form-group">
             <label className="form-label">Delivery Charge (LKR)</label>
             <input type="number" className="form-input" min={0} value={deliveryCharge} onChange={(e) => setDeliveryCharge(parseFloat(e.target.value) || 0)} />
@@ -248,7 +248,7 @@ export function PlaceOrderPage() {
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="form-row form-row-2">
           <div className="form-group">
             <label className="form-label">Advance Payment (LKR)</label>
             <input type="number" className="form-input" min={0} value={advance} onChange={(e) => setAdvance(parseFloat(e.target.value) || 0)} />
