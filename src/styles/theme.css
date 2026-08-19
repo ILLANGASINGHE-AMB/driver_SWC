@@ -1,0 +1,228 @@
+/* Same palette as the desktop app's index.html :root block, so DriverApp
+   stays visually consistent with SWC branding across both apps. */
+:root {
+  --primary: #1a4d8f;
+  --primary-light: #2d6bc4;
+  --accent: #00b4d8;
+  --accent2: #f0a500;
+  --bg: #f0f4fa;
+  --sidebar-bg: #0f2d5c;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html.dark {
+  --bg: #0f172a;
+  --card-bg: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --sidebar-bg: #020817;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-topbar {
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-topbar .app-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  font-size: 1.1em;
+  color: var(--primary);
+}
+
+.app-content {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: calc(84px + var(--safe-bottom));
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Bottom tab bar in portrait, left sidebar in landscape/wide screens —
+   pure CSS orientation adaptation, no JS layout engine needed. */
+.bottom-nav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-bottom);
+  z-index: 20;
+}
+
+.bottom-nav a {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 8px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+.bottom-nav a.active { color: var(--primary); }
+.bottom-nav a i { font-size: 1.25em; }
+
+@media (orientation: landscape) and (min-width: 640px) {
+  .app-shell { flex-direction: row; }
+  .bottom-nav {
+    position: sticky;
+    top: 0;
+    left: auto; right: auto; bottom: auto;
+    flex-direction: column;
+    width: 84px;
+    height: 100vh;
+    border-top: none;
+    border-right: 1px solid var(--border);
+    padding-top: calc(16px + var(--safe-top));
+    padding-bottom: 16px;
+  }
+  .bottom-nav a { padding: 12px 4px; }
+  .app-content { padding-bottom: 16px; }
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.stat-card .label { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 700; }
+.stat-card .value { font-size: 1.4em; font-weight: 700; margin-top: 4px; }
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-weight: 700;
+  font-size: 0.92em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px; /* touch target */
+}
+
+.btn-primary { background: linear-gradient(135deg, #0d9488, #0891b2); color: #fff; }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-block { width: 100%; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 0.75em; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.form-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 1em;
+  background: var(--card-bg);
+  color: var(--text);
+  min-height: 44px;
+}
+.form-input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(45,107,196,0.15); }
+
+.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 0.78em; font-weight: 700; }
+.badge-green { background: #dcfce7; color: #16a34a; }
+.badge-yellow { background: #fef9c3; color: #ca8a04; }
+.badge-gray { background: #f1f5f9; color: #64748b; }
+.badge-blue { background: #dbeafe; color: #2563eb; }
+
+.toast {
+  position: fixed;
+  left: 16px; right: 16px;
+  bottom: calc(96px + var(--safe-bottom));
+  background: var(--card-bg);
+  border-left: 4px solid var(--success);
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  z-index: 100;
+  font-size: 0.92em;
+}
+.toast.error { border-left-color: var(--danger); }
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop { align-items: center; }
+}
+
+.modal-sheet {
+  background: var(--card-bg);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 18px 18px 0 0;
+  padding: 20px;
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+@media (min-width: 640px) {
+  .modal-sheet { border-radius: 18px; }
+}
+
+.modal-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2em; margin-bottom: 16px; }

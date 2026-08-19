@@ -1,0 +1,18 @@
+# SAGA Driver App — deployed as its OWN, separate Netlify site (not part
+# of the main SWC app's site/redirects). Point a new Netlify site's base
+# directory at this DriverApp/ folder.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Same reasoning as the main app's netlify.toml: the Supabase anon key
+  # is designed to be public (ships to the browser either way); security
+  # comes from RLS, not from hiding this key. SUPABASE_SERVICE_ROLE_KEY
+  # is never used by this app and must never be set here.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
