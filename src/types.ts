@@ -110,3 +110,45 @@ export interface Order {
   created_at: string;
   [key: string]: unknown;
 }
+
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  catalog_item_id: number | null;
+  item_name: string;
+  quantity: number;
+  service_type: ServiceType | string;
+  price: number;
+  subtotal: number;
+  [key: string]: unknown;
+}
+
+export interface Invoice {
+  id: number;
+  order_id: number;
+  invoice_number: string;
+  invoice_type: 'Standard' | 'Credit' | string;
+  issue_date: string;
+  delivery_date: string | null;
+  credit_due_date?: string | null;
+  total_amount: number;
+  advance_payment: number;
+  extra_payment: number;
+  delivery_charge: number;
+  discount_rate: number;
+  discount_amount: number;
+  deduction_amount?: number;
+  subtotal_before_discount?: number;
+  paid_status: string;
+  [key: string]: unknown;
+}
+
+export interface Payment {
+  id: number;
+  invoice_id: number;
+  date: string;
+  amount: number;
+  method: string;
+  notes?: string | null;
+  [key: string]: unknown;
+}

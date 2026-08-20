@@ -35,7 +35,7 @@ export function OrdersPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.length === 0 && <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No orders found.</div>}
           {filtered.map((o) => (
-            <div key={o.id} className="card">
+            <div key={o.id} className="card" role="button" tabIndex={0} onClick={() => navigate(`/orders/${o.id}`)} style={{ cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <strong style={{ fontFamily: 'monospace' }}>{o.batch_id}</strong>
                 <span className={`badge ${o.status === 'Paid' ? 'badge-green' : o.status === 'Partially Paid' ? 'badge-yellow' : 'badge-gray'}`}>{o.status}</span>

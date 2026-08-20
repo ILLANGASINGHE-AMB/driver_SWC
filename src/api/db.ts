@@ -8,7 +8,7 @@
 // page reads from, so driver actions need to write through it too to stay
 // visible to admins.
 import { supabase } from '../supabaseClient';
-import type { Customer, Driver, Item, Order, OrderInput, OrderItemInput, Trip, Vehicle } from '../types';
+import type { Customer, Driver, Invoice, Item, Order, OrderInput, OrderItem, OrderItemInput, Payment, Trip, Vehicle } from '../types';
 
 async function q<T>(promise: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
   const { data, error } = await promise;
@@ -153,6 +153,13 @@ export const db = {
   async getOrders(): Promise<Order[]> {
     return qAll((from, to) => supabase.from('orders').select('*').order('created_at', { ascending: false }).range(from, to));
   },
+  async getOrder(id: number): Promise<Order | null> {
+    const rows = await q(supabase.from('orders').select('*').eq('id', id).limit(1));
+    return (rows[0] as Order) || null;
+  },
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    return q(supabase.from('order_items').select('*').eq('order_id', orderId).order('id', { ascending: true }));
+  },
   async createOrderWithItems(orderData: OrderInput, items: OrderItemInput[]): Promise<number> {
     const { data, error } = await supabase.rpc('create_order_with_items', { p_order: orderData, p_items: items });
     if (error) { console.error('create_order_with_items failed:', error); throw new Error(error.message); }
@@ -177,5 +184,14 @@ export const db = {
   async addInvoice(data: Record<string, unknown>): Promise<number> {
     const rows = await q(supabase.from('invoices').insert(data).select());
     return (rows[0] as { id: number }).id;
+  },
+  async getInvoiceByOrder(orderId: number): Promise<Invoice | null> {
+    const rows = await q(supabase.from('invoices').select('*').eq('order_id', orderId).limit(1));
+    return (rows[0] as Invoice) || null;
+  },
+
+  // ── Payments (shared, read-only for drivers) ──
+  async getPaymentsByInvoice(invoiceId: number): Promise<Payment[]> {
+    return q(supabase.from('payments').select('*').eq('invoice_id', invoiceId));
   }
 };

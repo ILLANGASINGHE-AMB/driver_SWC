@@ -62,3 +62,133 @@ export function computeOrderFinancials(
 export function orderStatusForAdvance(advance: number, grandTotal: number): 'Paid' | 'Unpaid' {
   return advance >= grandTotal ? 'Paid' : 'Unpaid';
 }
+
+// Ported from ../../financials.js's Financials.computeInvoiceFinancials,
+// kept byte-for-byte equivalent (down to the fallback chain for
+// itemsSubtotal) so the driver bill view agrees with the desktop app's
+// invoice/bill totals. Used by the order bill view (see OrderBillPage),
+// which builds a synthetic invoice-shaped object from the order's own
+// columns when no real `invoices` row exists yet for that order.
+export interface InvoiceFinancialsInput {
+  subtotal_before_discount?: number | null;
+  total_amount?: number | null;
+  discount_rate?: number | null;
+  discount_amount?: number | null;
+  delivery_charge?: number | null;
+  extra_payment?: number | null;
+  deduction_amount?: number | null;
+  advance_payment?: number | null;
+}
+
+export interface InvoiceFinancialsItem {
+  subtotal?: number;
+  price?: number;
+  quantity?: number;
+}
+
+export interface InvoiceFinancialsPayment {
+  amount?: number;
+}
+
+export interface InvoiceFinancials {
+  itemsSubtotal: number;
+  discountRate: number;
+  discountAmount: number;
+  deliveryCharge: number;
+  extraPayment: number;
+  discountedSubtotal: number;
+  grossInvoiceTotal: number;
+  deductionAmount: number;
+  netPayableTotal: number;
+  advancePayment: number;
+  paymentsTotal: number;
+  totalPaid: number;
+  balance: number;
+  isPaid: boolean;
+  status: 'Paid' | 'Partially Paid' | 'Unpaid';
+}
+
+export function computeInvoiceFinancials(
+  invoice: InvoiceFinancialsInput | null | undefined,
+  items: InvoiceFinancialsItem[] = [],
+  payments: InvoiceFinancialsPayment[] = []
+): InvoiceFinancials {
+  if (!invoice) {
+    return {
+      itemsSubtotal: 0,
+      discountRate: 0,
+      discountAmount: 0,
+      deliveryCharge: 0,
+      extraPayment: 0,
+      discountedSubtotal: 0,
+      grossInvoiceTotal: 0,
+      deductionAmount: 0,
+      netPayableTotal: 0,
+      advancePayment: 0,
+      paymentsTotal: 0,
+      totalPaid: 0,
+      balance: 0,
+      isPaid: false,
+      status: 'Unpaid'
+    };
+  }
+
+  const inv = invoice || {};
+  const pList = payments || [];
+  const iList = items || [];
+
+  let calcItemsSubtotal = 0;
+  if (iList.length > 0) {
+    calcItemsSubtotal = iList.reduce((s, i) => s + ((i.subtotal ?? 0) || ((i.price || 0) * (i.quantity || 0)) || 0), 0);
+  }
+
+  let itemsSubtotal = 0;
+  if (inv.subtotal_before_discount != null && (inv.subtotal_before_discount as number) > 0) {
+    itemsSubtotal = inv.subtotal_before_discount as number;
+  } else if (calcItemsSubtotal > 0) {
+    itemsSubtotal = calcItemsSubtotal;
+  } else {
+    itemsSubtotal = inv.total_amount || 0;
+  }
+
+  const discountRate = inv.discount_rate || 0;
+  let discountAmount = inv.discount_amount || 0;
+  if (discountAmount === 0 && discountRate > 0 && itemsSubtotal > 0) {
+    discountAmount = itemsSubtotal * (discountRate / 100);
+  }
+
+  const deliveryCharge = inv.delivery_charge || 0;
+  const extraPayment = inv.extra_payment || 0;
+
+  const discountedSubtotal = Math.max(0, itemsSubtotal - discountAmount);
+  const grossInvoiceTotal = discountedSubtotal + deliveryCharge + extraPayment;
+
+  const deductionAmount = inv.deduction_amount || 0;
+  const netPayableTotal = Math.max(0, grossInvoiceTotal - deductionAmount);
+
+  const advancePayment = inv.advance_payment || 0;
+  const paymentsTotal = pList.reduce((sum, p) => sum + (p.amount || 0), 0);
+  const totalPaid = advancePayment + paymentsTotal;
+
+  const balance = Math.max(0, parseFloat((netPayableTotal - totalPaid).toFixed(2)));
+  const isPaid = balance <= 0.009;
+  const status: InvoiceFinancials['status'] = isPaid ? 'Paid' : (totalPaid > 0 ? 'Partially Paid' : 'Unpaid');
+
+  return {
+    itemsSubtotal,
+    discountRate,
+    discountAmount,
+    deliveryCharge,
+    extraPayment,
+    discountedSubtotal,
+    grossInvoiceTotal,
+    deductionAmount,
+    netPayableTotal,
+    advancePayment,
+    paymentsTotal,
+    totalPaid,
+    balance,
+    isPaid,
+    status
+  };
+}
