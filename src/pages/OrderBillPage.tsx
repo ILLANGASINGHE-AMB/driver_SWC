@@ -1,15 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { db } from '../api/db';
 import { buildBillHtml } from '../lib/billHtml';
 import { useToast } from '../components/Toast';
 import type { Customer, Invoice, Order, OrderItem, Payment } from '../types';
 
 // View-only bill screen for drivers: tapping an order in OrdersPage lands
-// here, showing the same bill layout the desktop app prints, with a
-// Download button at the bottom that triggers the browser's print dialog
-// (Save as PDF) — see driverAppOrders.md. Drivers can view/download only,
-// never edit — no edit or delete action exists on this page.
+// here, showing the same bill layout the desktop app prints. The Download
+// button rasterizes the bill (html2canvas) into a real multi-page PDF
+// (jsPDF) and saves it directly, named after the order's batch id — no
+// browser print dialog, unlike the desktop app's print-to-PDF flow (see
+// driverAppOrders.md: drivers just want a file, not a printer picker).
+// Drivers can view/download only, never edit — no edit action exists here.
 export function OrderBillPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -17,6 +21,7 @@ export function OrderBillPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [billHtml, setBillHtml] = useState('');
 
@@ -68,11 +73,49 @@ export function OrderBillPage() {
     };
   }, [id]);
 
-  const handleDownload = () => {
-    const win = iframeRef.current?.contentWindow;
-    if (!win) return;
-    win.focus();
-    win.print();
+  const handleDownload = async () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc || !doc.body || !order || downloading) return;
+
+    setDownloading(true);
+    try {
+      if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+
+      const canvas = await html2canvas(doc.body, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        windowWidth: doc.documentElement.scrollWidth,
+        windowHeight: doc.documentElement.scrollHeight
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const imgData = canvas.toDataURL('image/png');
+
+      let heightLeft = imgHeight;
+      let position = 0;
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const safeName = (order.batch_id || `order-${order.id}`).replace(/[^a-zA-Z0-9._-]+/g, '_');
+      pdf.save(`${safeName}.pdf`);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      toast('Failed to generate PDF', 'error');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -97,8 +140,8 @@ export function OrderBillPage() {
             />
           </div>
 
-          <button className="btn btn-primary btn-block" onClick={handleDownload}>
-            <i className="fas fa-download" /> Download
+          <button className="btn btn-primary btn-block" onClick={handleDownload} disabled={downloading}>
+            <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} /> {downloading ? 'Generating PDF...' : 'Download'}
           </button>
         </>
       )}
