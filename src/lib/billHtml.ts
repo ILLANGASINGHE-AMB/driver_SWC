@@ -1,11 +1,9 @@
-// Builds a standalone printable bill/invoice HTML document for one order,
-// laid out to match the desktop app's bill (see ../../../invoice.js's
-// previewInvoiceByOrder/printInvoice) so a driver's "view as PDF" and the
-// office's bill look identical. Rendered into an <iframe srcDoc=...> by
-// OrderBillPage, and printed via that iframe's own window.print() — same
-// "print to PDF" mechanism the desktop app uses for its Download/Print
-// actions (there is no PDF-generation library in this app or the desktop
-// one; the browser's print dialog is the PDF path both apps rely on).
+// Builds the bill/invoice markup for one order, laid out to match the
+// desktop app's bill (see ../../../invoice.js's previewInvoiceByOrder/
+// printInvoice) so a driver's bill view and the office's bill look
+// identical. OrderBillPage uses buildBillHtml (full document) for the
+// on-screen preview iframe, and buildBillContentHtml (fragment only) for
+// the off-screen div it rasterizes into a PDF.
 import type { Customer, Invoice, Order, OrderItem, Payment } from '../types';
 import { computeInvoiceFinancials } from './financials';
 
@@ -39,7 +37,14 @@ export interface BillSettings {
   logo_data: string | null;
 }
 
-export function buildBillHtml(
+// Returns just the bill's own markup (no <html>/<head>/<body> wrapper) at a
+// fixed 780px design width, so it can be dropped into either the preview
+// iframe's document (via buildBillHtml below) or a plain off-screen div in
+// the main document for PDF capture (see OrderBillPage) — capturing a real
+// in-page element avoids the blank/shifted-page PDF bug that came from
+// html2canvas screenshotting content inside an iframe while the outer page
+// was scrolled.
+export function buildBillContentHtml(
   order: Order,
   customer: Customer | null,
   items: OrderItem[],
@@ -168,20 +173,8 @@ export function buildBillHtml(
     </div>`
     : '';
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>${escapeHtml((inv as Invoice).invoice_number || order.batch_id)}</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet"/>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1e293b; line-height: 1.5; }
-  @media print {
-    body { margin: 0; background: #fff; }
-    @page { margin: 12mm 10mm; size: A4; }
-  }
-</style>
-</head><body>
-  <div style="position:relative;font-family:'DM Sans',sans-serif;background:#fff;color:#1e293b;max-width:780px;margin:0 auto;padding:28px 22px;">
+  return `
+  <div style="position:relative;font-family:'DM Sans',sans-serif;background:#fff;color:#1e293b;width:780px;margin:0 auto;padding:28px 22px;">
     ${creditBanner}
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;padding-bottom:18px;border-bottom:2px solid #e2e8f0;flex-wrap:wrap;gap:14px;">
       <div style="display:flex;align-items:center;gap:14px;">
@@ -238,6 +231,29 @@ export function buildBillHtml(
 
       ${settings.footer_message ? `<div style="text-align:center;padding:14px;background:#f8fafc;border-radius:10px;font-size:0.88em;color:#64748b;font-style:italic;">${escapeHtml(settings.footer_message)}</div>` : ''}
     </div>
-  </div>
-</body></html>`;
+  </div>`;
+}
+
+// Full standalone HTML document (own <html>/<head> with the Google Fonts
+// link) for the on-screen preview iframe.
+export function buildBillHtml(
+  order: Order,
+  customer: Customer | null,
+  items: OrderItem[],
+  invoice: Invoice | null,
+  payments: Payment[],
+  settings: BillSettings
+): string {
+  const contentHtml = buildBillContentHtml(order, customer, items, invoice, payments, settings);
+  const title = invoice?.invoice_number || order.batch_id;
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>${escapeHtml(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1e293b; line-height: 1.5; }
+</style>
+</head><body>${contentHtml}</body></html>`;
 }

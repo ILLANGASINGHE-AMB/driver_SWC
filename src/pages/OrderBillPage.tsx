@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { db } from '../api/db';
-import { buildBillHtml } from '../lib/billHtml';
+import { buildBillHtml, buildBillContentHtml } from '../lib/billHtml';
 import { useToast } from '../components/Toast';
 import type { Customer, Invoice, Order, OrderItem, Payment } from '../types';
 
@@ -24,6 +24,7 @@ export function OrderBillPage() {
   const [downloading, setDownloading] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
   const [billHtml, setBillHtml] = useState('');
+  const [billContentHtml, setBillContentHtml] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -54,17 +55,20 @@ export function OrderBillPage() {
 
       if (cancelled) return;
 
-      const html = buildBillHtml(o, customer, items as OrderItem[], invoice, payments, {
+      const billSettings = {
         company_name: companyName || 'Sagacious Washing Center',
         address: address || '',
         phone: phone || '',
         email: email || '',
         footer_message: footerMessage || '',
         logo_data: logoData
-      });
+      };
+      const html = buildBillHtml(o, customer, items as OrderItem[], invoice, payments, billSettings);
+      const contentHtml = buildBillContentHtml(o, customer, items as OrderItem[], invoice, payments, billSettings);
 
       setOrder(o);
       setBillHtml(html);
+      setBillContentHtml(contentHtml);
       setLoading(false);
     }
     load();
@@ -74,19 +78,38 @@ export function OrderBillPage() {
   }, [id]);
 
   const handleDownload = async () => {
-    const doc = iframeRef.current?.contentDocument;
-    if (!doc || !doc.body || !order || downloading) return;
+    if (!order || !billContentHtml || downloading) return;
 
     setDownloading(true);
-    try {
-      if (doc.fonts && doc.fonts.ready) await doc.fonts.ready;
+    // Render the bill into a plain off-screen div in THIS document (not
+    // the preview iframe) before rasterizing it. Capturing an element
+    // that lives inside an iframe made html2canvas mis-measure the
+    // capture offset whenever the outer page itself was scrolled (which
+    // it usually is on a phone, since this button sits below the fold),
+    // producing PDFs with a blank gap shifted in from the top. A same-
+    // document, fixed-width, off-screen node has no such scroll-offset
+    // ambiguity.
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:0;left:-10000px;width:780px;background:#fff;z-index:-1;';
+    container.innerHTML = billContentHtml;
+    document.body.appendChild(container);
 
-      const canvas = await html2canvas(doc.body, {
+    try {
+      if (document.fonts && document.fonts.ready) await document.fonts.ready;
+      await Promise.all(
+        Array.from(container.querySelectorAll('img')).map((img) =>
+          img.complete ? Promise.resolve() : new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; })
+        )
+      );
+
+      const canvas = await html2canvas(container, {
         scale: 2,
         useCORS: true,
         backgroundColor: '#ffffff',
-        windowWidth: doc.documentElement.scrollWidth,
-        windowHeight: doc.documentElement.scrollHeight
+        width: container.scrollWidth,
+        height: container.scrollHeight,
+        windowWidth: container.scrollWidth,
+        windowHeight: container.scrollHeight
       });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -114,6 +137,7 @@ export function OrderBillPage() {
       console.error('PDF generation failed:', err);
       toast('Failed to generate PDF', 'error');
     } finally {
+      container.remove();
       setDownloading(false);
     }
   };
