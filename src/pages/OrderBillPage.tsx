@@ -25,6 +25,22 @@ export function OrderBillPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [billHtml, setBillHtml] = useState('');
   const [billContentHtml, setBillContentHtml] = useState('');
+  const [previewHeight, setPreviewHeight] = useState(400);
+
+  // The preview iframe (see buildBillHtml) scales its fixed-780px bill
+  // down to fit a phone-width viewport and reports the resulting height
+  // here, so the iframe element matches its content instead of sitting
+  // inside a fixed 70vh box with a big blank gap underneath.
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.source !== iframeRef.current?.contentWindow) return;
+      if (e.data?.type === 'bill-preview-size' && typeof e.data.height === 'number') {
+        setPreviewHeight(Math.max(200, e.data.height));
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -146,26 +162,31 @@ export function OrderBillPage() {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <button className="btn btn-secondary" onClick={() => navigate('/orders')}><i className="fas fa-arrow-left" /></button>
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3em', margin: 0 }}>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.3em', margin: 0, flex: 1 }}>
           {order ? order.batch_id : 'Order Bill'}
         </h1>
+        {!loading && (
+          <button className="btn btn-primary" onClick={handleDownload} disabled={downloading} title="Download PDF">
+            <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} />
+          </button>
+        )}
       </div>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
         <>
-          <div className="card" style={{ padding: 8, marginBottom: 12 }}>
+          <div className="card" style={{ padding: 8, marginBottom: 12, overflow: 'hidden' }}>
             <iframe
               ref={iframeRef}
               srcDoc={billHtml}
               title="Bill preview"
-              style={{ width: '100%', height: '70vh', border: 'none', borderRadius: 10, background: '#fff' }}
+              style={{ width: '100%', height: previewHeight, border: 'none', borderRadius: 10, background: '#fff', display: 'block' }}
             />
           </div>
 
           <button className="btn btn-primary btn-block" onClick={handleDownload} disabled={downloading}>
-            <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} /> {downloading ? 'Generating PDF...' : 'Download'}
+            <i className={`fas ${downloading ? 'fa-spinner fa-spin' : 'fa-download'}`} /> {downloading ? 'Generating PDF...' : 'Download PDF'}
           </button>
         </>
       )}

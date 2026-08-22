@@ -247,13 +247,40 @@ export function buildBillHtml(
   const contentHtml = buildBillContentHtml(order, customer, items, invoice, payments, settings);
   const title = invoice?.invoice_number || order.batch_id;
 
+  // The bill itself is a fixed 780px design (matches the desktop print
+  // layout exactly, and buildBillContentHtml's off-screen PDF capture
+  // relies on that same fixed width). For the on-screen preview here,
+  // that 780px is almost always wider than a phone's iframe, so instead
+  // of letting it overflow/get clipped, this scales the whole thing down
+  // to fit — proportionally, so nothing wraps or truncates differently
+  // than the real bill — and reports its scaled height back to the
+  // parent page so the iframe can be sized to match instead of leaving a
+  // tall blank gap (see OrderBillPage's 'bill-preview-size' listener).
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>${escapeHtml(title)}</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet"/>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1e293b; line-height: 1.5; }
+  html, body { background: #fff; overflow: hidden; }
+  body { font-family: 'DM Sans', sans-serif; color: #1e293b; line-height: 1.5; }
+  #scale-wrap { width: 780px; transform-origin: top left; }
 </style>
-</head><body>${contentHtml}</body></html>`;
+</head><body>
+<div id="scale-wrap">${contentHtml}</div>
+<script>
+  function fitScale() {
+    var wrap = document.getElementById('scale-wrap');
+    var scale = Math.min(1, window.innerWidth / 780);
+    wrap.style.transform = 'scale(' + scale + ')';
+    var height = Math.ceil(wrap.scrollHeight * scale);
+    document.body.style.height = height + 'px';
+    try { window.parent.postMessage({ type: 'bill-preview-size', height: height }, '*'); } catch (e) {}
+  }
+  window.addEventListener('resize', fitScale);
+  window.addEventListener('load', fitScale);
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(fitScale); }
+  fitScale();
+</script>
+</body></html>`;
 }
