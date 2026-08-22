@@ -84,6 +84,12 @@ export const db = {
   async updateDriverStatus(id: number, status: string): Promise<void> {
     await q(supabase.from('drivers').update({ status }).eq('id', id));
   },
+  // RLS ("drivers read own or staff") only returns the caller's own row for
+  // a driver-role login, same restriction the desktop app's driver
+  // dashboard runs under — other drivers' rows come back empty, not erroring.
+  async getDrivers(): Promise<Driver[]> {
+    return qAll((from, to) => supabase.from('drivers').select('*').order('name').range(from, to));
+  },
 
   // ── Customers (shared) ────────────────────
   async getCustomers(): Promise<Customer[]> {
@@ -188,6 +194,21 @@ export const db = {
   async getInvoiceByOrder(orderId: number): Promise<Invoice | null> {
     const rows = await q(supabase.from('invoices').select('*').eq('order_id', orderId).limit(1));
     return (rows[0] as Invoice) || null;
+  },
+
+  // Mirrors db.js's assignDriverToOrders/markOrderDelivered (see
+  // supabase_order_delivery_assignment_migration.sql) — delivery_status is a
+  // separate column from the payment `status` field on purpose.
+  async assignDriverToOrders(orderIds: number[], driverId: number): Promise<void> {
+    await q(
+      supabase
+        .from('orders')
+        .update({ driver_id: driverId, delivery_status: 'out_for_delivery', driver_assigned_at: new Date().toISOString() })
+        .in('id', orderIds)
+    );
+  },
+  async markOrderDelivered(orderId: number): Promise<void> {
+    await q(supabase.from('orders').update({ delivery_status: 'delivered' }).eq('id', orderId));
   },
 
   // ── Payments (shared, read-only for drivers) ──

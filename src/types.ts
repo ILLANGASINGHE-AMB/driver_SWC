@@ -108,6 +108,8 @@ export interface Order {
   discount_rate: number;
   discount_amount: number;
   created_at: string;
+  delivery_status: 'out_for_delivery' | 'delivered' | null;
+  driver_assigned_at: string | null;
   [key: string]: unknown;
 }
 
