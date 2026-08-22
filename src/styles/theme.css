@@ -30,6 +30,12 @@ html.dark {
 
 * { box-sizing: border-box; }
 
+/* Scales every em/rem-based font-size in the app down proportionally —
+   cheaper and more consistent than hand-tuning each fontSize prop across
+   every page. .form-input below is pinned back to a fixed 16px so this
+   doesn't shrink real inputs under iOS Safari's zoom-on-focus threshold. */
+html { font-size: 90%; }
+
 html, body, #root {
   height: 100%;
 }
@@ -194,7 +200,10 @@ button, input, select, textarea {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 11px 12px;
-  font-size: 1em;
+  /* Fixed px, not em: iOS Safari auto-zooms the page on focus for any
+     input with a computed font-size under 16px, which the 90% root scale
+     above would otherwise trigger. */
+  font-size: 16px;
   background: var(--card-bg);
   color: var(--text);
   min-height: 44px;
@@ -245,32 +254,31 @@ button, input, select, textarea {
 }
 .toast.error { border-left-color: var(--danger); }
 
+/* Anchored near the top of the screen (not centered/bottom-sheet) on
+   purpose: when a form field inside is focused, the on-screen keyboard
+   eats the bottom of the viewport, and a bottom- or center-anchored
+   modal is exactly what ends up hidden behind it. Top-anchored plus its
+   own scroll keeps every field reachable above the keyboard. */
 .modal-backdrop {
   position: fixed; inset: 0;
   background: rgba(15,23,42,0.55);
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  padding: calc(16px + var(--safe-top)) 16px 16px;
   z-index: 50;
-}
-
-@media (min-width: 640px) {
-  .modal-backdrop { align-items: center; }
 }
 
 .modal-sheet {
   background: var(--card-bg);
   width: 100%;
   max-width: 520px;
-  max-height: 90vh;
+  max-height: calc(100vh - 32px - var(--safe-top));
   overflow-y: auto;
-  border-radius: 18px 18px 0 0;
+  border-radius: 18px;
   padding: 20px;
-  padding-bottom: calc(20px + var(--safe-bottom));
-}
-
-@media (min-width: 640px) {
-  .modal-sheet { border-radius: 18px; }
+  margin: 0 auto;
 }
 
 .modal-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2em; margin-bottom: 16px; }
