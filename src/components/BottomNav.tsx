@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const TABS = [
+  { to: '/dashboard', icon: 'fa-gauge-high', label: 'Dashboard' },
   { to: '/transport', icon: 'fa-truck-fast', label: 'Transport' },
   { to: '/vehicles', icon: 'fa-car', label: 'Vehicles' },
   { to: '/customers', icon: 'fa-hotel', label: 'Customers' },

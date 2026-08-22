@@ -5,6 +5,7 @@ import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmDialog';
 import { BottomNav } from './components/BottomNav';
 import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { TransportPage } from './pages/TransportPage';
 import { VehiclesPage } from './pages/VehiclesPage';
 import { CustomersPage } from './pages/CustomersPage';
@@ -33,7 +34,8 @@ function Shell() {
       <BottomNav />
       <div className="app-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/transport" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/transport" element={<TransportPage />} />
           <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="/customers" element={<CustomersPage />} />
@@ -41,7 +43,7 @@ function Shell() {
           <Route path="/orders/new" element={<PlaceOrderPage />} />
           <Route path="/orders/:id" element={<OrderBillPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="*" element={<Navigate to="/transport" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </div>
     </div>
